@@ -55,7 +55,7 @@ const GradientBlinds: React.FC<GradientBlindsProps> = ({
   spotlightOpacity = 1,
   distortAmount = 0,
   shineDirection = 'left',
-  mixBlendMode = 'lighten'
+  mixBlendMode = 'lighten',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -74,7 +74,7 @@ const GradientBlinds: React.FC<GradientBlindsProps> = ({
     const renderer = new Renderer({
       dpr: dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
       alpha: true,
-      antialias: true
+      antialias: true,
     });
     rendererRef.current = renderer;
     const gl = renderer.gl;
@@ -83,13 +83,13 @@ const GradientBlinds: React.FC<GradientBlindsProps> = ({
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
+    // Importante: el canvas no necesita eventos; lo añadimos detrás.
     container.appendChild(canvas);
 
     const vertex = `
 attribute vec2 position;
 attribute vec2 uv;
 varying vec2 vUv;
-
 void main() {
   vUv = uv;
   gl_Position = vec4(position, 0.0, 1.0);
@@ -162,30 +162,30 @@ vec3 getGradientColor(float t){
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 uv0 = fragCoord.xy / iResolution.xy;
+  vec2 uv0 = fragCoord.xy / iResolution.xy;
 
-    float aspect = iResolution.x / iResolution.y;
-    vec2 p = uv0 * 2.0 - 1.0;
-    p.x *= aspect;
-    vec2 pr = rotate2D(p, uAngle);
-    pr.x /= aspect;
-    vec2 uv = pr * 0.5 + 0.5;
+  float aspect = iResolution.x / iResolution.y;
+  vec2 p = uv0 * 2.0 - 1.0;
+  p.x *= aspect;
+  vec2 pr = rotate2D(p, uAngle);
+  pr.x /= aspect;
+  vec2 uv = pr * 0.5 + 0.5;
 
-    vec2 uvMod = uv;
-    if (uDistort > 0.0) {
-      float a = uvMod.y * 6.0;
-      float b = uvMod.x * 6.0;
-      float w = 0.01 * uDistort;
-      uvMod.x += sin(a) * w;
-      uvMod.y += cos(b) * w;
-    }
-    float t = uvMod.x;
-    if (uMirror > 0.5) {
-      t = 1.0 - abs(1.0 - 2.0 * fract(t));
-    }
-    vec3 base = getGradientColor(t);
+  vec2 uvMod = uv;
+  if (uDistort > 0.0) {
+    float a = uvMod.y * 6.0;
+    float b = uvMod.x * 6.0;
+    float w = 0.01 * uDistort;
+    uvMod.x += sin(a) * w;
+    uvMod.y += cos(b) * w;
+  }
+  float t = uvMod.x;
+  if (uMirror > 0.5) {
+    t = 1.0 - abs(1.0 - 2.0 * fract(t));
+  }
+  vec3 base = getGradientColor(t);
 
-    vec2 offset = vec2(iMouse.x/iResolution.x, iMouse.y/iResolution.y);
+  vec2 offset = vec2(iMouse.x/iResolution.x, iMouse.y/iResolution.y);
   float d = length(uv0 - offset);
   float r = max(uSpotlightRadius, 1e-4);
   float dn = d / r;
@@ -193,49 +193,25 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
   vec3 cir = vec3(spot);
   float stripe = fract(uvMod.x * max(uBlindCount, 1.0));
   if (uShineFlip > 0.5) stripe = 1.0 - stripe;
-    vec3 ran = vec3(stripe);
+  vec3 ran = vec3(stripe);
 
-    vec3 col = cir + base - ran;
-    col += (rand(gl_FragCoord.xy + iTime) - 0.5) * uNoise;
+  vec3 col = cir + base - ran;
+  col += (rand(gl_FragCoord.xy + iTime) - 0.5) * uNoise;
 
-    fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, 1.0);
 }
 
 void main() {
-    vec4 color;
-    mainImage(color, vUv * iResolution.xy);
-    gl_FragColor = color;
+  vec4 color;
+  mainImage(color, vUv * iResolution.xy);
+  gl_FragColor = color;
 }
 `;
 
     const { arr: colorArr, count: colorCount } = prepStops(gradientColors);
-    const uniforms: {
-      iResolution: { value: [number, number, number] };
-      iMouse: { value: [number, number] };
-      iTime: { value: number };
-      uAngle: { value: number };
-      uNoise: { value: number };
-      uBlindCount: { value: number };
-      uSpotlightRadius: { value: number };
-      uSpotlightSoftness: { value: number };
-      uSpotlightOpacity: { value: number };
-      uMirror: { value: number };
-      uDistort: { value: number };
-      uShineFlip: { value: number };
-      uColor0: { value: [number, number, number] };
-      uColor1: { value: [number, number, number] };
-      uColor2: { value: [number, number, number] };
-      uColor3: { value: [number, number, number] };
-      uColor4: { value: [number, number, number] };
-      uColor5: { value: [number, number, number] };
-      uColor6: { value: [number, number, number] };
-      uColor7: { value: [number, number, number] };
-      uColorCount: { value: number };
-    } = {
-      iResolution: {
-        value: [gl.drawingBufferWidth, gl.drawingBufferHeight, 1]
-      },
-      iMouse: { value: [0, 0] },
+    const uniforms = {
+      iResolution: { value: [gl.drawingBufferWidth, gl.drawingBufferHeight, 1] as [number, number, number] },
+      iMouse: { value: [0, 0] as [number, number] },
       iTime: { value: 0 },
       uAngle: { value: (angle * Math.PI) / 180 },
       uNoise: { value: noise },
@@ -254,14 +230,10 @@ void main() {
       uColor5: { value: colorArr[5] },
       uColor6: { value: colorArr[6] },
       uColor7: { value: colorArr[7] },
-      uColorCount: { value: colorCount }
+      uColorCount: { value: colorCount },
     };
 
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      uniforms
-    });
+    const program = new Program(gl, { vertex, fragment, uniforms });
     programRef.current = program;
 
     const geometry = new Triangle(gl);
@@ -276,7 +248,6 @@ void main() {
 
       if (blindMinWidth && blindMinWidth > 0) {
         const maxByMinWidth = Math.max(1, Math.floor(rect.width / blindMinWidth));
-
         const effective = blindCount ? Math.min(blindCount, maxByMinWidth) : maxByMinWidth;
         uniforms.uBlindCount.value = Math.max(1, effective);
       } else {
@@ -296,6 +267,7 @@ void main() {
     const ro = new ResizeObserver(resize);
     ro.observe(container);
 
+    // ⬇️ Cambiamos: escuchar en window para que funcione incluso sobre la Card.
     const onPointerMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       const scale = (renderer as unknown as { dpr?: number }).dpr || 1;
@@ -306,7 +278,7 @@ void main() {
         uniforms.iMouse.value = [x, y];
       }
     };
-    canvas.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
 
     const loop = (t: number) => {
       rafRef.current = requestAnimationFrame(loop);
@@ -337,11 +309,10 @@ void main() {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      canvas.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointermove', onPointerMove);
       ro.disconnect();
-      if (canvas.parentElement === container) {
-        container.removeChild(canvas);
-      }
+      if (canvas.parentElement === container) container.removeChild(canvas);
+
       const callIfFn = <T extends object, K extends keyof T>(obj: T | null, key: K) => {
         if (obj && typeof obj[key] === 'function') {
           (obj[key] as unknown as () => void).call(obj);
@@ -370,17 +341,18 @@ void main() {
     spotlightSoftness,
     spotlightOpacity,
     distortAmount,
-    shineDirection
+    shineDirection,
+    mixBlendMode,
   ]);
 
   return (
     <div
       ref={containerRef}
-      className={`gradient-blinds-container ${className}`}
+      className={`gradient-blinds-container ${className ?? ''}`}
       style={{
         ...(mixBlendMode && {
-          mixBlendMode: mixBlendMode as React.CSSProperties['mixBlendMode']
-        })
+          mixBlendMode: mixBlendMode as React.CSSProperties['mixBlendMode'],
+        }),
       }}
     />
   );
